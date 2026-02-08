@@ -81,8 +81,8 @@ while($r = $routers->fetch_assoc()) {
         </div>
         <h4 class="text-center py-3 bg-dark">Secure | Remote Access</h4>
         <a href="dashboard.php"><i class="bi bi-speedometer2"></i> Dashboard</a>
-        <a href="routers.php"><i class="bi bi-hdd-network"></i> Routers</a>
-        <a href="provision_router.php"><i class="bi bi-hdd-network"></i> Wireguard Setup</a>
+        <!-- <a href="routers.php"><i class="bi bi-hdd-network"></i> Routers</a> -->
+        <a href="provision_router.php"><i class="bi bi-hdd-network"></i>+ Add Router</a>
         <a href="profiles.php"><i class="bi bi-gear"></i> Profiles</a>
         <a href="generate_vouchers.php"><i class="bi bi-ticket-perforated"></i> Voucher Generator</a>
         <a href="active_users.php"><i class="bi bi-people"></i> Active Users</a>

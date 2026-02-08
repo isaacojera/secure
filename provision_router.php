@@ -1,10 +1,14 @@
 <?php
-//provision_router.php
 require 'config.php';
 require 'wg_functions.php';
 requireLogin();
 
+function randomPassword($length = 12) {
+    return substr(str_shuffle('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%'), 0, $length);
+}
+
 $script = "";
+$display_pass = "";
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
@@ -16,7 +20,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // STEP 2 — Get next available VPN IP
     $wg_ip = getNextWGIP($conn);
 
-    // STEP 3 — Save peer in database
+    // STEP 3 — Generate UNIQUE API credentials
+    $api_user = "apiuser";
+    $api_pass = randomPassword();
+    $display_pass = $api_pass;
+
+    // STEP 4 — Save peer in wg_peers
     $stmt = $conn->prepare("INSERT INTO wg_peers 
         (station_id, router_name, wg_ip, private_key, public_key)
         VALUES (?, ?, ?, ?, ?)");
@@ -30,35 +39,47 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     );
     $stmt->execute();
 
-    // ==============================
-    // STEP 4 — Add peer to WG server
-    // ==============================
-    $peerConfig = "\n[Peer]
-PublicKey = $public
-AllowedIPs = $wg_ip/32
-";
+    // STEP 5 — Register router in routers table
+    $stmt2 = $conn->prepare("INSERT INTO routers 
+        (station_id, router_name, vpn_ip, api_username, api_password)
+        VALUES (?, ?, ?, ?, ?)");
 
-    // Add peer LIVE to WireGuard interface
+    $stmt2->bind_param("issss",
+        $_SESSION['station_id'],
+        $router_name,
+        $wg_ip,
+        $api_user,
+        $api_pass
+    );
+    $stmt2->execute();
+
+    // STEP 6 — Add peer LIVE to WireGuard
     shell_exec("sudo wg set wg0 peer $public allowed-ips $wg_ip/32");
-    // ==============================
-    // STEP 5 — Build MikroTik script
-    // ==============================
-    $serverPublicKey = "HV0MT79EZepRCRjeLi/ZPTpjfs5nzGSVCFwkVcZKIzE=";   // run: wg show wg0
-    $serverEndpoint  = "146.190.174.165:51820";
+
+    // STEP 7 — MikroTik script
+    $serverPublicKey = "HV0MT79EZepRCRjeLi/ZPTpjfs5nzGSVCFwkVcZKIzE=";
+    $serverEndpoint  = "146.190.174.165";
 
     $script = "
-/interface wireguard add name=wg0 private-key=\"$private\"
+/user add name=$api_user password=$api_pass group=full
+/ip service enable api
 
-/interface wireguard peers add \
-    interface=wg0 \
+/interface wireguard
+add name=wg-mikhmon listen-port=13231 private-key=\"$private\"
+
+/interface wireguard peers
+add interface=wg-mikhmon \
     public-key=\"$serverPublicKey\" \
     endpoint-address=$serverEndpoint \
-    allowed-address=0.0.0.0/0 \
+    endpoint-port=51820 \
+    allowed-address=10.10.0.1/32 \
     persistent-keepalive=25
 
-/ip address add address=$wg_ip/24 interface=wg0
+/ip address
+add address=$wg_ip/32 interface=wg-mikhmon
 
-/ip service set api address=10.10.0.0/24 disabled=no
+/ip service
+set api address=10.10.0.0/24 disabled=no
 ";
 }
 ?>
@@ -68,16 +89,14 @@ AllowedIPs = $wg_ip/32
 <head>
     <title>Provision Router</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 
 <div class="container mt-5">
 
-    <!-- Back Button -->
-    <a href="dashboard.php" class="btn btn-outline-secondary mb-3"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+    <a href="dashboard.php" class="btn btn-outline-secondary mb-3">Back to Dashboard</a>
 
-    <h3 class="mb-4">Provision New MikroTik Router</h3>
+    <h3>Provision New MikroTik Router</h3>
 
     <form method="POST" class="card p-4 shadow mb-4">
         <div class="mb-3">
@@ -89,9 +108,15 @@ AllowedIPs = $wg_ip/32
 
     <?php if (!empty($script)) { ?>
         <div class="card p-4 shadow">
-            <h5 class="mb-3 text-success">✅ Router Provisioned Successfully</h5>
-            <p>Copy this script and paste it into the MikroTik terminal:</p>
-            <textarea class="form-control" rows="14" readonly><?= htmlspecialchars($script) ?></textarea>
+            <h5 class="text-success">Router Provisioned Successfully</h5>
+
+            <div class="alert alert-warning">
+                <strong>API Username:</strong> <?= $api_user ?><br>
+                <strong>API Password:</strong> <?= $display_pass ?>
+            </div>
+
+            <p>Copy this script into MikroTik terminal:</p>
+            <textarea class="form-control" rows="16" readonly><?= htmlspecialchars($script) ?></textarea>
         </div>
     <?php } ?>
 
