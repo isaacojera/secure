@@ -25,120 +25,136 @@ while($r = $routers->fetch_assoc()) {
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <!-- THIS IS THE FIX FOR "SMALL BODY" -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
     <title>Mikrotik Remote</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body { background:#f5f5f5; }
-        .card { cursor:pointer; transition: transform 0.1s; }
-        .card:hover { transform: scale(1.03); }
-        .sidebar { min-height:100vh; background:#343a40; color:white; }
-        .sidebar a { color:white; text-decoration:none; display:block; padding:10px 20px; }
-        .sidebar a:hover { background:#495057; }
-
+        body { background:#f8f9fa; font-family: sans-serif; }
+        .card { cursor:pointer; transition: transform 0.1s; border: none; border-radius: 12px; }
+        .card:hover { transform: translateY(-5px); }
+        .sidebar { min-height:100vh; background:#212529; color:white; }
+        .sidebar a { color:rgba(255,255,255,0.8); text-decoration:none; display:block; padding:12px 20px; border-radius: 8px; margin: 4px 10px; transition: 0.3s; }
+        .sidebar a:hover { background:rgba(255,255,255,0.1); color: #fff; }
+        
+        /* Mobile Sidebar Logic */
         @media (max-width: 767.98px) {
             .sidebar {
-                position: fixed;
-                top: 0;
-                left: 0;
-                height: 100vh;
-                width: 250px;
-                z-index: 1050;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease-in-out;
+                position: fixed; top: 0; left: 0; height: 100vh; width: 260px;
+                z-index: 1050; transform: translateX(-100%); transition: 0.3s ease;
             }
-            .sidebar.show {
-                transform: translateX(0);
-            }
+            .sidebar.show { transform: translateX(0); }
             .sidebar-overlay {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.5);
-                z-index: 1040;
+                display: none; position: fixed; top: 0; left: 0; width: 100%;
+                height: 100%; background: rgba(0,0,0,0.5); z-index: 1040;
             }
-            .sidebar-overlay.show {
-                display: block;
-            }
+            .sidebar-overlay.show { display: block; }
+            /* Make text readable on small screens */
+            .card-text.fs-3 { font-size: 1.5rem !important; }
+            .card-title { font-size: 0.9rem; }
         }
     </style>
 </head>
 <body>
 
 <div class="container-fluid">
-<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
-<div class="row">
+    <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+    <div class="row">
 
-    <!-- Sidebar -->
-    <div class="col-md-2 sidebar p-0" id="sidebar">
-        <div class="d-md-none text-end p-2">
-            <button class="btn btn-sm btn-outline-light" onclick="toggleSidebar()"><i class="bi bi-x-lg"></i></button>
+        <!-- Sidebar -->
+        <div class="col-md-2 sidebar p-0" id="sidebar">
+            <div class="d-md-none text-end p-3">
+                <i class="bi bi-x-lg fs-4" onclick="toggleSidebar()"></i>
+            </div>
+            <h5 class="text-center py-4 px-2 fw-bold text-uppercase" style="letter-spacing:1px;">Mikrotik Admin</h5>
+            <a href="dashboard.php"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+            <a href="provision_router.php"><i class="bi bi-plus-circle me-2"></i> Add Router</a>
+            <a href="profiles.php"><i class="bi bi-gear me-2"></i> Profiles</a>
+            <a href="generate_vouchers.php"><i class="bi bi-ticket-perforated me-2"></i> Vouchers</a>
+            <a href="active_users.php"><i class="bi bi-people me-2"></i> Active Users</a>
+            <hr class="mx-3 opacity-25">
+            <a href="logout.php" class="text-danger"><i class="bi bi-box-arrow-right me-2"></i> Logout</a>
         </div>
-        <h4 class="text-center py-3 bg-dark">Secure | Remote Access</h4>
-        <a href="dashboard.php"><i class="bi bi-speedometer2"></i> Dashboard</a>
-        <!-- <a href="routers.php"><i class="bi bi-hdd-network"></i> Routers</a> -->
-        <a href="provision_router.php"><i class="bi bi-hdd-network"></i>+ Add Router</a>
-        <a href="profiles.php"><i class="bi bi-gear"></i> Profiles</a>
-        <a href="generate_vouchers.php"><i class="bi bi-ticket-perforated"></i> Voucher Generator</a>
-        <a href="active_users.php"><i class="bi bi-people"></i> Active Users</a>
-        <a href="#"><i class="bi bi-bar-chart-line"></i> Reports</a>
-        <a href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
+
+        <!-- Main Content -->
+        <div class="col-md-10 p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-center d-md-none mb-3">
+                <h4 class="m-0">Dashboard</h4>
+                <button class="btn btn-dark" onclick="toggleSidebar()">
+                    <i class="bi bi-list"></i>
+                </button>
+            </div>
+            
+            <h2 class="d-none d-md-block mb-4">Dashboard Overview</h2>
+            
+            <div class="row g-3"> <!-- g-3 adds nice spacing between cards -->
+                <!-- Routers - col-6 means 2 per row on mobile -->
+                <div class="col-6 col-md-3">
+                    <div class="card text-white bg-primary h-100 shadow-sm" onclick="location.href='routers.php'">
+                        <div class="card-body py-4">
+                            <h6 class="card-title opacity-75"><i class="bi bi-hdd-network"></i> Routers</h6>
+                            <p class="card-text fs-3 fw-bold mb-0"><?= $routers_count ?></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profiles -->
+                <div class="col-6 col-md-3">
+                    <div class="card text-white bg-success h-100 shadow-sm" onclick="location.href='profiles.php'">
+                        <div class="card-body py-4">
+                            <h6 class="card-title opacity-75"><i class="bi bi-gear"></i> Profiles</h6>
+                            <p class="card-text fs-3 fw-bold mb-0"><?= $profiles_count ?></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vouchers -->
+                <div class="col-6 col-md-3">
+                    <div class="card text-white bg-warning h-100 shadow-sm" onclick="location.href='generate_vouchers.php'">
+                        <div class="card-body py-4 text-dark">
+                            <h6 class="card-title opacity-75"><i class="bi bi-ticket-perforated"></i> Vouchers</h6>
+                            <p class="card-text fs-3 fw-bold mb-0"><?= $vouchers_count ?></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Users -->
+                <div class="col-6 col-md-3">
+                    <div class="card text-white bg-danger h-100 shadow-sm" onclick="location.href='active_users.php'">
+                        <div class="card-body py-4">
+                            <h6 class="card-title opacity-75"><i class="bi bi-people"></i> Active</h6>
+                            <p class="card-text fs-3 fw-bold mb-0"><?= $active_users ?></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="row mt-4 g-3">
+                <div class="col-12 col-lg-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white fw-bold">Vouchers Usage</div>
+                        <div class="card-body">
+                            <canvas id="voucherChart" style="max-height: 250px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white fw-bold">Active Users per Router</div>
+                        <div class="card-body">
+                            <canvas id="activeChart" style="max-height: 250px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <!-- Main Content -->
-    <div class="col-md-10 p-4">
-        <button class="btn btn-dark d-md-none mb-3" onclick="toggleSidebar()">
-            <i class="bi bi-list"></i> Menu
-        </button>
-        <h2>Dashboard</h2>
-        <div class="row mt-4">
-
-            <!-- Routers Card -->
-            <div class="col-md-3 mb-3">
-                <div class="card text-white bg-primary" onclick="location.href='routers.php'">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-hdd-network"></i> Routers</h5>
-                        <p class="card-text fs-3"><?= $routers_count ?></p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Profiles Card -->
-            <div class="col-md-3 mb-3">
-                <div class="card text-white bg-success" onclick="location.href='profiles.php'">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-gear"></i> Profiles</h5>
-                        <p class="card-text fs-3"><?= $profiles_count ?></p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Vouchers Card -->
-            <div class="col-md-3 mb-3">
-                <div class="card text-white bg-warning" onclick="location.href='generate_vouchers.php'">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-ticket-perforated"></i> Vouchers</h5>
-                        <p class="card-text fs-3"><?= $vouchers_count ?></p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Active Users Card -->
-            <div class="col-md-3 mb-3">
-                <div class="card text-white bg-danger" onclick="location.href='active_users.php'">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-people"></i> Active Users</h5>
-                        <p class="card-text fs-3"><?= $active_users ?></p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
+</div>
 
         <!-- Optionally add charts/analytics -->
         <div class="row mt-4">

@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 /ip service enable api
 
 /interface wireguard
-add name=wg-mikhmon listen-port=13231 private-key=\"$private\"
+add name=wg-mikhmon private-key=\"$private\"
 
 /interface wireguard peers
 add interface=wg-mikhmon \
@@ -78,6 +78,9 @@ add interface=wg-mikhmon \
 /ip address
 add address=$wg_ip/32 interface=wg-mikhmon
 
+/ip route
+add dst-address=10.10.0.1/32 gateway=wg-mikhmon
+
 /ip service
 set api address=10.10.0.0/24 disabled=no
 ";
@@ -88,6 +91,7 @@ set api address=10.10.0.0/24 disabled=no
 <html>
 <head>
     <title>Provision Router</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
